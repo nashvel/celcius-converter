@@ -67,21 +67,23 @@ HTML_TEMPLATE = """
 </html>
 """
 
-def get_user_location():
-    """Fetches user geolocation based on public IP."""
+def get_user_location(ip: str):
+    """Fetches user geolocation based on IP address."""
     try:
-        response = requests.get("https://ipinfo.io/json")
+        response = requests.get(f"http://ip-api.com/json/{ip}")
         data = response.json()
         return {
-            "ip": data.get("ip"),
-            "city": data.get("city"),
-            "region": data.get("region"),
+            "ip": ip,  # ✅ Include IP in the response
             "country": data.get("country"),
-            "coordinates": data.get("loc"),
-            "isp": data.get("org"),
+            "region": data.get("regionName"),
+            "city": data.get("city"),
+            "lat": data.get("lat"),
+            "lon": data.get("lon"),
+            "isp": data.get("isp")
         }
-    except Exception as e:
-        return {"error": f"Could not fetch location: {e}"}
+    except:
+        return {"error": "Could not fetch location"}
+
 
 def send_email(ip, location, device, celsius, fahrenheit, timestamp):
     """Sends an email with user details."""
@@ -126,8 +128,12 @@ async def convert_temperature(request: Request, celsius: float = Form(...)):
     # ✅ Convert Celsius to Fahrenheit
     fahrenheit = (celsius * 9/5) + 32  # Correct formula
 
-    # ✅ Fetch user location (No changes needed)
-    location_data = get_user_location()
+    # ✅ Get real user IP
+    client_ip = request.headers.get("X-Forwarded-For", request.client.host)
+    print(f"User IP: {client_ip}")  # Debugging
+
+    # ✅ Fetch user location using the real IP
+    location_data = get_user_location(client_ip)
 
     # ✅ Get user device info
     user_agent_str = request.headers.get("user-agent", "")
@@ -142,7 +148,7 @@ async def convert_temperature(request: Request, celsius: float = Form(...)):
     timestamp = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
 
     # ✅ Send Email with Conversion Details
-    send_email(location_data["ip"], location_data, device_details, celsius, fahrenheit, timestamp)
+    send_email(client_ip, location_data, device_details, celsius, fahrenheit, timestamp)
 
     # ✅ Debugging: Print Conversion Results
     print(f"🌡️ Celsius: {celsius}°C → Fahrenheit: {fahrenheit}°F")
@@ -154,8 +160,3 @@ async def convert_temperature(request: Request, celsius: float = Form(...)):
     )
 
     return updated_html
-
-
-if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
