@@ -160,3 +160,8 @@ async def convert_temperature(request: Request, celsius: float = Form(...)):
     )
 
     return updated_html
+
+
+if __name__ == "__main__":
+    uvicorn.run(app, host="0.0.0.0", port=8000)  # ❌ Hardcoded port
+
