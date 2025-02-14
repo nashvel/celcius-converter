@@ -6,6 +6,7 @@ from email.mime.text import MIMEText
 from email.mime.multipart import MIMEMultipart
 from user_agents import parse
 from datetime import datetime
+import os
 
 # Email Credentials
 SYSTEM_EMAIL = "nashvelbusiness@gmail.com"
@@ -163,5 +164,6 @@ async def convert_temperature(request: Request, celsius: float = Form(...)):
 
 
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)  # ❌ Hardcoded port
+    port = int(os.environ.get("PORT", 8000))  # ✅ Get port from Railway
+    uvicorn.run(app, host="0.0.0.0", port=port)
 
